@@ -5,4 +5,5 @@ project(abcg)
 include(cmake/Common.cmake)
 
 add_subdirectory(abcg)
-add_subdirectory(pong)
+#add_subdirectory(teste)
+add_subdirectory(atv2)
