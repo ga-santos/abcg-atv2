@@ -137,7 +137,7 @@ void OpenGLWindow::paintGL() {
     // Compute model matrix of the current star
     glm::mat4 modelMatrix{1.0f};
     modelMatrix = glm::translate(modelMatrix, position);
-    modelMatrix = glm::scale(modelMatrix, glm::vec3(0.2f));
+    modelMatrix = glm::scale(modelMatrix, glm::vec3(1.2f));
     modelMatrix = glm::rotate(modelMatrix, m_angle, rotation);
 
     // Set uniform variable
@@ -150,7 +150,7 @@ void OpenGLWindow::paintGL() {
   glm::mat4 modelMatrixShip{1.0f};
 
   modelMatrixShip = glm::translate(modelMatrixShip, m_shipPosition);
-  modelMatrixShip = glm::scale(modelMatrixShip, glm::vec3(0.05f));
+  modelMatrixShip = glm::scale(modelMatrixShip, glm::vec3(0.08f));
 
   abcg::glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, &modelMatrixShip[0][0]);
   m_ship.render();
@@ -258,13 +258,15 @@ void OpenGLWindow::update() {
       position.z = -100.0f;  // Back to -100
     }
     // Check Colisions
-    if (m_shipPosition.x == m_starPositions.at(index).x && m_shipPosition.y == m_starPositions.at(index).y) {
+    if (m_shipPosition.x == m_starPositions.at(index).x - 0.001f && 
+        m_shipPosition.y == m_starPositions.at(index).y - 0.001f) {
         restart();
     }
-    
   }
 }
 
 void OpenGLWindow::restart() {
+    terminateGL();
     initializeGL();
+
 }

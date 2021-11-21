@@ -1,6 +1,6 @@
 # Blender v2.83.4 OBJ File: 'Intergalactic_Spaceships_Version_2_Export_2.blend'
 # www.blender.org
-mtllib Intergalactic_Spaceships_Version_2.mtl
+mtllib ship.mtl
 o Intergalactic_Spaceships_Version_2
 v -0.000000 -0.479220 2.689179
 v 0.079401 -0.493141 2.682270
