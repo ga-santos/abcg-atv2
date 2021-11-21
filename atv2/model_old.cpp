@@ -4,7 +4,6 @@
 #include <tiny_obj_loader.h>
 
 #include <cppitertools/itertools.hpp>
-#include <filesystem>
 #include <glm/gtx/hash.hpp>
 #include <unordered_map>
 
@@ -14,44 +13,10 @@ template <>
 struct hash<Vertex> {
   size_t operator()(Vertex const& vertex) const noexcept {
     const std::size_t h1{std::hash<glm::vec3>()(vertex.position)};
-    const std::size_t h2{std::hash<glm::vec3>()(vertex.normal)};
-    const std::size_t h3{std::hash<glm::vec2>()(vertex.texCoord)};
-    return h1 ^ h2 ^ h3;
+    return h1;
   }
 };
 }  // namespace std
-
-void Model::computeNormals() {
-  // Clear previous vertex normals
-  for (auto& vertex : m_vertices) {
-    vertex.normal = glm::zero<glm::vec3>();
-  }
-
-  // Compute face normals
-  for (const auto offset : iter::range<int>(0, m_indices.size(), 3)) {
-    // Get face vertices
-    Vertex& a{m_vertices.at(m_indices.at(offset + 0))};
-    Vertex& b{m_vertices.at(m_indices.at(offset + 1))};
-    Vertex& c{m_vertices.at(m_indices.at(offset + 2))};
-
-    // Compute normal
-    const auto edge1{b.position - a.position};
-    const auto edge2{c.position - b.position};
-    const glm::vec3 normal{glm::cross(edge1, edge2)};
-
-    // Accumulate on vertices
-    a.normal += normal;
-    b.normal += normal;
-    c.normal += normal;
-  }
-
-  // Normalize
-  for (auto& vertex : m_vertices) {
-    vertex.normal = glm::normalize(vertex.normal);
-  }
-
-  m_hasNormals = true;
-}
 
 void Model::createBuffers() {
   // Delete previous buffers
@@ -73,16 +38,70 @@ void Model::createBuffers() {
                      GL_STATIC_DRAW);
   abcg::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
+/*
+void Model::loadObj(std::string_view path, bool standardize) {
+  tinyobj::ObjReader reader;
 
-void Model::loadDiffuseTexture(std::string_view path) {
-  if (!std::filesystem::exists(path)) return;
+  if (!reader.ParseFromFile(path.data())) {
+    if (!reader.Error().empty()) {
+      throw abcg::Exception{abcg::Exception::Runtime(
+          fmt::format("Failed to load model {} ({})", path, reader.Error()))};
+    }
+    throw abcg::Exception{
+        abcg::Exception::Runtime(fmt::format("Failed to load model {}", path))};
+  }
 
-  abcg::glDeleteTextures(1, &m_diffuseTexture);
-  m_diffuseTexture = abcg::opengl::loadTexture(path);
+  if (!reader.Warning().empty()) {
+    fmt::print("Warning: {}\n", reader.Warning());
+  }
+
+  const auto& attrib{reader.GetAttrib()};
+  const auto& shapes{reader.GetShapes()};
+
+  m_vertices.clear();
+  m_indices.clear();
+
+  // A key:value map with key=Vertex and value=index
+  std::unordered_map<Vertex, GLuint> hash{};
+
+  // Loop over shapes
+  for (const auto& shape : shapes) {
+    // Loop over indices
+    for (const auto offset : iter::range(shape.mesh.indices.size())) {
+      // Access to vertex
+      const tinyobj::index_t index{shape.mesh.indices.at(offset)};
+
+      // Vertex position
+      const std::size_t startIndex{static_cast<size_t>(3 * index.vertex_index)};
+      const float vx{attrib.vertices.at(startIndex + 0)};
+      const float vy{attrib.vertices.at(startIndex + 1)};
+      const float vz{attrib.vertices.at(startIndex + 2)};
+
+      Vertex vertex{};
+      vertex.position = {vx, vy, vz};
+
+      // If hash doesn't contain this vertex
+      if (hash.count(vertex) == 0) {
+        // Add this index (size of m_vertices)
+        hash[vertex] = m_vertices.size();
+        // Add this vertex
+        m_vertices.push_back(vertex);
+      }
+
+      m_indices.push_back(hash[vertex]);
+    }
+  }
+
+  if (standardize) {
+    this->standardize();
+  }
+
+  createBuffers();
 }
+*/
 
 void Model::loadObj(std::string_view path, bool standardize) {
-  const auto basePath{std::filesystem::path{path}.parent_path().string() + "/"};
+  auto basePath{std::filesystem::path{path}.parent_path().string() + "/"};
 
   tinyobj::ObjReaderConfig readerConfig;
   readerConfig.mtl_search_path = basePath;  // Path to material files
@@ -195,20 +214,8 @@ void Model::loadObj(std::string_view path, bool standardize) {
 
   createBuffers();
 }
-
 void Model::render(int numTriangles) const {
   abcg::glBindVertexArray(m_VAO);
-
-  abcg::glActiveTexture(GL_TEXTURE0);
-  abcg::glBindTexture(GL_TEXTURE_2D, m_diffuseTexture);
-
-  // Set minification and magnification parameters
-  abcg::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  abcg::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-  // Set texture wrapping parameters
-  abcg::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  abcg::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
   const auto numIndices{(numTriangles < 0) ? m_indices.size()
                                            : numTriangles * 3};
@@ -240,25 +247,6 @@ void Model::setupVAO(GLuint program) {
                                 sizeof(Vertex), nullptr);
   }
 
-  const GLint normalAttribute{abcg::glGetAttribLocation(program, "inNormal")};
-  if (normalAttribute >= 0) {
-    abcg::glEnableVertexAttribArray(normalAttribute);
-    GLsizei offset{sizeof(glm::vec3)};
-    abcg::glVertexAttribPointer(normalAttribute, 3, GL_FLOAT, GL_FALSE,
-                                sizeof(Vertex),
-                                reinterpret_cast<void*>(offset));
-  }
-
-  const GLint texCoordAttribute{
-      abcg::glGetAttribLocation(program, "inTexCoord")};
-  if (texCoordAttribute >= 0) {
-    abcg::glEnableVertexAttribArray(texCoordAttribute);
-    GLsizei offset{sizeof(glm::vec3) + sizeof(glm::vec3)};
-    abcg::glVertexAttribPointer(texCoordAttribute, 2, GL_FLOAT, GL_FALSE,
-                                sizeof(Vertex),
-                                reinterpret_cast<void*>(offset));
-  }
-
   // End of binding
   abcg::glBindBuffer(GL_ARRAY_BUFFER, 0);
   abcg::glBindVertexArray(0);
@@ -288,7 +276,6 @@ void Model::standardize() {
 }
 
 void Model::terminateGL() {
-  abcg::glDeleteTextures(1, &m_diffuseTexture);
   abcg::glDeleteBuffers(1, &m_EBO);
   abcg::glDeleteBuffers(1, &m_VBO);
   abcg::glDeleteVertexArrays(1, &m_VAO);

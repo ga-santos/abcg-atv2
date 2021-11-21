@@ -35,7 +35,7 @@ class OpenGLWindow : public abcg::OpenGLWindow {
 
   glm::mat4 m_viewMatrix{1.0f};
   glm::mat4 m_projMatrix{1.0f};
-  float m_FOV{171.0f};
+  float m_FOV{130.0f};
 
 /*
   // Shaders

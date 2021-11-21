@@ -150,7 +150,7 @@ void OpenGLWindow::paintGL() {
   glm::mat4 modelMatrixShip{1.0f};
 
   modelMatrixShip = glm::translate(modelMatrixShip, m_shipPosition);
-  modelMatrixShip = glm::scale(modelMatrixShip, glm::vec3(0.08f));
+  modelMatrixShip = glm::scale(modelMatrixShip, glm::vec3(0.05f));
 
   abcg::glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, &modelMatrixShip[0][0]);
   m_ship.render();
@@ -258,10 +258,12 @@ void OpenGLWindow::update() {
       position.z = -100.0f;  // Back to -100
     }
     // Check Colisions
-    if (m_shipPosition.x == m_starPositions.at(index).x - 0.001f && 
-        m_shipPosition.y == m_starPositions.at(index).y - 0.001f) {
+    ///*
+    if (m_shipPosition.x <= m_starPositions.at(index).x - 0.01f && 
+        m_shipPosition.y <= m_starPositions.at(index).y - 0.01f) {
         restart();
     }
+    //*/
   }
 }
 
