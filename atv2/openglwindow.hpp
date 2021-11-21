@@ -1,6 +1,8 @@
 #ifndef OPENGLWINDOW_HPP_
 #define OPENGLWINDOW_HPP_
 
+#include <imgui.h>
+
 #include <random>
 
 #include "abcg.hpp"
@@ -16,7 +18,7 @@ class OpenGLWindow : public abcg::OpenGLWindow {
   void terminateGL() override;
 
  private:
-  static const int m_numStars{250};
+  static const int m_numStars{320};
 
   GLuint m_program{};
 
@@ -35,7 +37,16 @@ class OpenGLWindow : public abcg::OpenGLWindow {
 
   glm::mat4 m_viewMatrix{1.0f};
   glm::mat4 m_projMatrix{1.0f};
-  float m_FOV{130.0f};
+  float m_FOV{168.0f};
+
+  int cont_collisions{2};
+
+  abcg::ElapsedTimer m_collisionTimer;
+  abcg::ElapsedTimer m_restartWaitTimer;
+
+  bool isLose{false};
+
+  // ImFont* m_font{};
 
 /*
   // Shaders

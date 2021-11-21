@@ -6,7 +6,18 @@
 #include <glm/gtx/fast_trigonometry.hpp>
 
 void OpenGLWindow::initializeGL() {
+
+  /*
+  ImGuiIO &io{ImGui::GetIO()};
+  const auto filename{getAssetsPath() + "Inconsolata-Medium.ttf"};
+  m_font = io.Fonts->AddFontFromFileTTF(filename.c_str(), 30.0f);
+
+  if (m_font == nullptr) {
+    throw abcg::Exception{abcg::Exception::Runtime("Cannot load font file")};
+  } */
+
   abcg::glClearColor(0, 0, 0, 1);
+
 
   // Enable depth buffering
   abcg::glEnable(GL_DEPTH_TEST);
@@ -41,6 +52,9 @@ void OpenGLWindow::initializeGL() {
 
   m_ship.loadObj(getAssetsPath() + "ship.obj");
   m_ship.setupVAO(m_program);
+
+  cont_collisions = 2;
+  m_shipPosition = glm::vec3(0.0f, 0.0f, 0.0f);
 }
 
 void OpenGLWindow::handleEvent(SDL_Event& ev) {
@@ -142,6 +156,7 @@ void OpenGLWindow::paintGL() {
 
     // Set uniform variable
     abcg::glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, &modelMatrix[0][0]);
+    
 
     m_model.render();
   }
@@ -150,9 +165,10 @@ void OpenGLWindow::paintGL() {
   glm::mat4 modelMatrixShip{1.0f};
 
   modelMatrixShip = glm::translate(modelMatrixShip, m_shipPosition);
-  modelMatrixShip = glm::scale(modelMatrixShip, glm::vec3(0.05f));
+  modelMatrixShip = glm::scale(modelMatrixShip, glm::vec3(0.07f));
 
   abcg::glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, &modelMatrixShip[0][0]);
+  abcg::glUniform4f(colorLoc, 1.0f, 0.25f, 0.25f, 1.0f);
   m_ship.render();
 
   abcg::glUseProgram(0);
@@ -162,7 +178,7 @@ void OpenGLWindow::paintUI() {
   abcg::OpenGLWindow::paintUI();
 
   {
-    const auto widgetSize{ImVec2(218, 62)};
+    const auto widgetSize{ImVec2(218, 100)};
     ImGui::SetNextWindowPos(ImVec2(m_viewportWidth - widgetSize.x - 5, 5));
     ImGui::SetNextWindowSize(widgetSize);
     ImGui::Begin("Widget window", nullptr, ImGuiWindowFlags_NoDecoration);
@@ -172,8 +188,7 @@ void OpenGLWindow::paintUI() {
       static std::size_t currentIndex{};
       const std::vector<std::string> comboItems{"Perspective", "Orthographic"};
 
-      if (ImGui::BeginCombo("Projection",
-                            comboItems.at(currentIndex).c_str())) {
+      if (ImGui::BeginCombo("Projection",comboItems.at(currentIndex).c_str())) {
         for (const auto index : iter::range(comboItems.size())) {
           const bool isSelected{currentIndex == index};
           if (ImGui::Selectable(comboItems.at(index).c_str(), isSelected))
@@ -187,19 +202,44 @@ void OpenGLWindow::paintUI() {
       ImGui::PushItemWidth(170);
       const auto aspect{static_cast<float>(m_viewportWidth) /
                         static_cast<float>(m_viewportHeight)};
+      ImGui::Text("Colisões restantes: %d", cont_collisions);
       if (currentIndex == 0) {
         m_projMatrix = glm::perspective(glm::radians(m_FOV), aspect, 0.01f, 100.0f);
 
         // m_projMatrix = glm::perspective(glm::radians(180.0f), aspect, 0.1f, 5.0f);
-            
 
         ImGui::SliderFloat("FOV", &m_FOV, 5.0f, 179.0f, "%.0f degrees");
       } else {
-        m_projMatrix = glm::ortho(-20.0f * aspect, 20.0f * aspect, -20.0f,
-                                  20.0f, 0.01f, 100.0f);
+        m_projMatrix = glm::ortho(-20.0f * aspect, 20.0f * aspect, -20.0f,20.0f, 0.01f, 100.0f);
       }
+
       ImGui::PopItemWidth();
     }
+
+    ImGui::End();
+
+
+    const auto size{ImVec2(300, 85)};
+    const auto position{ImVec2((m_viewportWidth) / 2.0f,
+                               (m_viewportHeight) / 2.0f)};
+    ImGui::SetNextWindowPos(position);
+    ImGui::SetNextWindowSize(size);
+    ImGuiWindowFlags flags{ImGuiWindowFlags_NoBackground |
+                          ImGuiWindowFlags_NoTitleBar |
+                          ImGuiWindowFlags_NoInputs};
+    ImGui::Begin(" ", nullptr, flags);
+    {
+      // ImGui::PushFont(m_font);
+
+      if(isLose)
+      {
+        ImGui::Text("*Lose!*");
+      }
+
+      // ImGui::PopFont();
+    }
+    ImGui::End();
+  }
 /*
     // Shader combo box
     {
@@ -223,9 +263,6 @@ void OpenGLWindow::paintUI() {
         m_model.setupVAO(m_programs.at(m_currentProgramIndex));
       }
     }*/
-
-    ImGui::End();
-  }
 }
 
 void OpenGLWindow::resizeGL(int width, int height) {
@@ -235,10 +272,17 @@ void OpenGLWindow::resizeGL(int width, int height) {
 
 void OpenGLWindow::terminateGL() {
   m_model.terminateGL();
+  m_ship.terminateGL();
   abcg::glDeleteProgram(m_program);
 }
 
 void OpenGLWindow::update() {
+
+  if(isLose && m_restartWaitTimer.elapsed() > 5){
+    restart();
+    return;
+  }
+
   // Animate angle by 90 degrees per second
   const float deltaTime{static_cast<float>(getDeltaTime())};
   m_angle = glm::wrapAngle(m_angle + glm::radians(90.0f) * deltaTime);
@@ -249,26 +293,42 @@ void OpenGLWindow::update() {
     auto &rotation{m_starRotations.at(index)};
 
     // Z coordinate increases by 10 units per second
-    position.z += deltaTime * 2.5f;
+    position.z += deltaTime * 11.0f;
 
-    // If this star is behind the camera, select a new random position and
-    // orientation, and move it back to -100
-    if (position.z > 0.1f) {
-      randomizeStar(position, rotation);
-      position.z = -100.0f;  // Back to -100
+    if(!isLose){
+      // If this star is behind the camera, select a new random position and
+      // orientation, and move it back to -100
+      if (position.z > 0.1f) {
+        randomizeStar(position, rotation);
+        position.z = -100.0f;  // Back to -100
+      }
+
+      // Check Colisions
+      if (  (m_shipPosition.x <= position.x + 1.5f && m_shipPosition.x >= position.x - 1.5f)
+            && (m_shipPosition.y <= position.y + 1.5f && m_shipPosition.y >= position.y - 1.5f) 
+            && (m_shipPosition.z <= position.z + 1.5f && m_shipPosition.z >= position.z - 1.5f)) 
+      {
+        if(m_collisionTimer.elapsed() > 1){
+          cont_collisions = cont_collisions - 1;
+
+          if(cont_collisions == 0){
+            isLose = true;
+            m_shipPosition.z = 20.0f;
+            m_restartWaitTimer.restart();
+          }
+
+          m_collisionTimer.restart();
+        }
+      }
+    }else{
+      position.z = 20.0f;
     }
-    // Check Colisions
-    ///*
-    if (m_shipPosition.x <= m_starPositions.at(index).x - 0.01f && 
-        m_shipPosition.y <= m_starPositions.at(index).y - 0.01f) {
-        restart();
-    }
-    //*/
-  }
+  }    
+  
 }
 
 void OpenGLWindow::restart() {
-    terminateGL();
+    isLose = false;
+    // terminateGL();
     initializeGL();
-
 }
