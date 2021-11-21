@@ -7,14 +7,15 @@
 
 void OpenGLWindow::initializeGL() {
 
+  // Load a new font
   /*
   ImGuiIO &io{ImGui::GetIO()};
   const auto filename{getAssetsPath() + "Inconsolata-Medium.ttf"};
-  m_font = io.Fonts->AddFontFromFileTTF(filename.c_str(), 30.0f);
-
+  m_font = io.Fonts->AddFontFromFileTTF(filename.c_str(), 50.0f);
   if (m_font == nullptr) {
     throw abcg::Exception{abcg::Exception::Runtime("Cannot load font file")};
-  } */
+  }
+  */
 
   abcg::glClearColor(0, 0, 0, 1);
 
@@ -53,7 +54,7 @@ void OpenGLWindow::initializeGL() {
   m_ship.loadObj(getAssetsPath() + "ship.obj");
   m_ship.setupVAO(m_program);
 
-  cont_collisions = 2;
+  cont_collisions = 5;
   m_shipPosition = glm::vec3(0.0f, 0.0f, 0.0f);
 }
 
@@ -62,16 +63,16 @@ void OpenGLWindow::handleEvent(SDL_Event& ev) {
 
   if (ev.type == SDL_KEYDOWN) {
     if (ev.key.keysym.sym == SDLK_UP || ev.key.keysym.sym == SDLK_w){
-      m_shipPosition.y += deltaTime * 1.0f;
+      m_shipPosition.y += deltaTime * 1.5f;
     }
     if (ev.key.keysym.sym == SDLK_DOWN || ev.key.keysym.sym == SDLK_s){
-      m_shipPosition.y -= deltaTime * 1.0f;
+      m_shipPosition.y -= deltaTime * 1.5f;
     }
     if (ev.key.keysym.sym == SDLK_LEFT || ev.key.keysym.sym == SDLK_a){
-      m_shipPosition.x -= deltaTime * 1.0f;
+      m_shipPosition.x -= deltaTime * 1.5f;
     }
     if (ev.key.keysym.sym == SDLK_RIGHT || ev.key.keysym.sym == SDLK_d){
-      m_shipPosition.x += deltaTime * 1.0f;
+      m_shipPosition.x += deltaTime * 1.5f;
     }
       /*
         const GLint modelMatrixLoc{abcg::glGetUniformLocation(m_program, "modelMatrix")};
@@ -113,19 +114,6 @@ void OpenGLWindow::paintGL() {
 
   abcg::glViewport(0, 0, m_viewportWidth, m_viewportHeight);
 
-/*
-  // Use currently selected program
-  const auto program{m_programs.at(m_currentProgramIndex)};
-  abcg::glUseProgram(program);
-
-  // Get location of uniform variables
-  const GLint viewMatrixLoc{abcg::glGetUniformLocation(program, "viewMatrix")};
-  const GLint projMatrixLoc{abcg::glGetUniformLocation(program, "projMatrix")};
-  const GLint modelMatrixLoc{
-      abcg::glGetUniformLocation(program, "modelMatrix")};
-  const GLint normalMatrixLoc{
-      abcg::glGetUniformLocation(program, "normalMatrix")};
-*/
   abcg::glUseProgram(m_program);
 
   // Get location of uniform variables (could be precomputed)
@@ -217,52 +205,27 @@ void OpenGLWindow::paintUI() {
     }
 
     ImGui::End();
+  }
 
-
-    const auto size{ImVec2(300, 85)};
-    const auto position{ImVec2((m_viewportWidth) / 2.0f,
-                               (m_viewportHeight) / 2.0f)};
+  {
+    const auto size{ImVec2(150, 150)};
+    const auto position{ImVec2((m_viewportWidth - size.x) / 2.0f,
+                               (m_viewportHeight - size.y) / 2.0f)};
     ImGui::SetNextWindowPos(position);
     ImGui::SetNextWindowSize(size);
     ImGuiWindowFlags flags{ImGuiWindowFlags_NoBackground |
-                          ImGuiWindowFlags_NoTitleBar |
-                          ImGuiWindowFlags_NoInputs};
+                           ImGuiWindowFlags_NoTitleBar |
+                           ImGuiWindowFlags_NoInputs};
     ImGui::Begin(" ", nullptr, flags);
-    {
-      // ImGui::PushFont(m_font);
-
-      if(isLose)
+    //ImGui::PushFont(m_font);
+    if(isLose)
       {
-        ImGui::Text("*Lose!*");
+        ImGui::Text(" *Lose!* ");
       }
-
-      // ImGui::PopFont();
-    }
+    //ImGui::PopFont();
     ImGui::End();
   }
-/*
-    // Shader combo box
-    {
-      static std::size_t currentIndex{};
 
-      ImGui::PushItemWidth(120);
-      if (ImGui::BeginCombo("Shader", m_shaderNames.at(currentIndex))) {
-        for (const auto index : iter::range(m_shaderNames.size())) {
-          const bool isSelected{currentIndex == index};
-          if (ImGui::Selectable(m_shaderNames.at(index), isSelected))
-            currentIndex = index;
-          if (isSelected) ImGui::SetItemDefaultFocus();
-        }
-        ImGui::EndCombo();
-      }
-      ImGui::PopItemWidth();
-
-      // Set up VAO if shader program has changed
-      if (static_cast<int>(currentIndex) != m_currentProgramIndex) {
-        m_currentProgramIndex = currentIndex;
-        m_model.setupVAO(m_programs.at(m_currentProgramIndex));
-      }
-    }*/
 }
 
 void OpenGLWindow::resizeGL(int width, int height) {
@@ -293,7 +256,7 @@ void OpenGLWindow::update() {
     auto &rotation{m_starRotations.at(index)};
 
     // Z coordinate increases by 10 units per second
-    position.z += deltaTime * 11.0f;
+    position.z += deltaTime * 13.0f;
 
     if(!isLose){
       // If this star is behind the camera, select a new random position and
@@ -304,9 +267,9 @@ void OpenGLWindow::update() {
       }
 
       // Check Colisions
-      if (  (m_shipPosition.x <= position.x + 1.5f && m_shipPosition.x >= position.x - 1.5f)
-            && (m_shipPosition.y <= position.y + 1.5f && m_shipPosition.y >= position.y - 1.5f) 
-            && (m_shipPosition.z <= position.z + 1.5f && m_shipPosition.z >= position.z - 1.5f)) 
+      if (  (m_shipPosition.x <= position.x + 1.2f && m_shipPosition.x >= position.x - 1.2f)
+            && (m_shipPosition.y <= position.y + 1.2f && m_shipPosition.y >= position.y - 1.2f) 
+            && (m_shipPosition.z <= position.z + 1.2f && m_shipPosition.z >= position.z - 1.2f)) 
       {
         if(m_collisionTimer.elapsed() > 1){
           cont_collisions = cont_collisions - 1;

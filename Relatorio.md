@@ -1,5 +1,5 @@
-# Pong
-Trabalho da disciplina MCTA008-17 Computação Gráfica
+# abcg-atv2
+Atividade 2 da disciplina MCTA008-17 Computação Gráfica
 Professores:  
 Harlen Batagelo (harlen.batagelo@ufabc.edu.br)
 Bruno Marques (bruno.marques@ufabc.edu.br)
@@ -8,11 +8,10 @@ Alunos - RA:
 Diogo Miyake - 21048813  
 Gabriel dos Santos - 11201722251  
 ## Introdução
-A partir dos códigos do asteroids, criamos uma simplificação do jogo PONG.
+Utilizando a Biblioteca ABCG criamos um jogo usando o efeito starfield ao qual a cada colisão o contador de vida diminui.
 
 ## Funcionalidades
-O jogo consiste em uma bola que inicialmente vai para a esquerda e a partir dai o jogador 1 faz com que ela bata na barra que é controlada pelas teclas w (subida) e s (descida) fazendo com que a bola seja enviada ao outro lado, o jogador 2 controla a barra da direita com as teclas seta para cima e seta pra baixo fazendo com que a barra se desloque nas devidas posições.  
-O Objetivo é fazer a bola ultrapassar as barras para que o jogador ganhe. 
-
+O jogo consiste em uma nave que é controlada usando as teclas WASD ou SETAS (CIMA, BAIXO, ESQUERDA, DIREITA), fazendo a nave se mover e assim desviando dos obstáculos. 
+Ainda conta com o mostrador de FPS, contador de vida da nave(que diminui a cada colisão), e um slider de perspectiva para o jogador poder ver qual fica melhor para sua experiência.
 ## Arquivos 
-Os aqrquivos se encontram na pasta `pong`. 
+Os aqrquivos se encontram na pasta `atv2`. 

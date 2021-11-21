@@ -46,15 +46,8 @@ class OpenGLWindow : public abcg::OpenGLWindow {
 
   bool isLose{false};
 
-  // ImFont* m_font{};
+  //ImFont* m_font{};
 
-/*
-  // Shaders
-  std::vector<const char*> m_shaderNames{"blinnphong", "phong", "depth"};
-  std::vector<GLuint> m_programs;
-  int m_currentProgramIndex{-1};
-
-*/
   void randomizeStar(glm::vec3 &position, glm::vec3 &rotation);
   void update();
 
