@@ -8,6 +8,7 @@
 
 class OpenGLWindow : public abcg::OpenGLWindow {
  protected:
+  void handleEvent(SDL_Event& ev) override;
   void initializeGL() override;
   void paintGL() override;
   void paintUI() override;
@@ -15,7 +16,7 @@ class OpenGLWindow : public abcg::OpenGLWindow {
   void terminateGL() override;
 
  private:
-  static const int m_numStars{500};
+  static const int m_numStars{250};
 
   GLuint m_program{};
 
@@ -36,11 +37,17 @@ class OpenGLWindow : public abcg::OpenGLWindow {
   glm::mat4 m_projMatrix{1.0f};
   float m_FOV{171.0f};
 
+/*
+  // Shaders
+  std::vector<const char*> m_shaderNames{"blinnphong", "phong", "depth"};
+  std::vector<GLuint> m_programs;
+  int m_currentProgramIndex{-1};
+
+*/
   void randomizeStar(glm::vec3 &position, glm::vec3 &rotation);
   void update();
 
-  void handleEvent(SDL_Event& ev);
-
+  void restart();
   glm::vec3 m_shipPosition{glm::vec3(0.0f, 0.0f, 0.0f)};
 };
 

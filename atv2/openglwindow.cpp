@@ -13,8 +13,13 @@ void OpenGLWindow::initializeGL() {
 
   // Create program
   m_program = createProgramFromFile(getAssetsPath() + "depth.vert",
-                                    getAssetsPath() + "depth.frag");
-
+                                   getAssetsPath() + "depth.frag");
+  // Create programs
+  /*for (const auto& name : m_shaderNames) {
+    const auto program{createProgramFromFile(getAssetsPath() + name + ".vert",
+                                             getAssetsPath() + name + ".frag")};
+    m_programs.push_back(program);
+  }*/
   // Load model
   m_model.loadObj(getAssetsPath() + "box.obj");
 
@@ -22,7 +27,8 @@ void OpenGLWindow::initializeGL() {
 
   // Camera at (0,0,0) and looking towards the negative z
   m_viewMatrix =
-      glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f),
+      glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), 
+                  glm::vec3(0.0f, 0.0f, -1.0f),
                   glm::vec3(0.0f, 1.0f, 0.0f));
 
   // Setup stars
@@ -93,6 +99,19 @@ void OpenGLWindow::paintGL() {
 
   abcg::glViewport(0, 0, m_viewportWidth, m_viewportHeight);
 
+/*
+  // Use currently selected program
+  const auto program{m_programs.at(m_currentProgramIndex)};
+  abcg::glUseProgram(program);
+
+  // Get location of uniform variables
+  const GLint viewMatrixLoc{abcg::glGetUniformLocation(program, "viewMatrix")};
+  const GLint projMatrixLoc{abcg::glGetUniformLocation(program, "projMatrix")};
+  const GLint modelMatrixLoc{
+      abcg::glGetUniformLocation(program, "modelMatrix")};
+  const GLint normalMatrixLoc{
+      abcg::glGetUniformLocation(program, "normalMatrix")};
+*/
   abcg::glUseProgram(m_program);
 
   // Get location of uniform variables (could be precomputed)
@@ -103,6 +122,7 @@ void OpenGLWindow::paintGL() {
   const GLint modelMatrixLoc{
       abcg::glGetUniformLocation(m_program, "modelMatrix")};
   const GLint colorLoc{abcg::glGetUniformLocation(m_program, "color")};
+  
 
   // Set uniform variables used by every scene object
   abcg::glUniformMatrix4fv(viewMatrixLoc, 1, GL_FALSE, &m_viewMatrix[0][0]);
@@ -130,7 +150,7 @@ void OpenGLWindow::paintGL() {
   glm::mat4 modelMatrixShip{1.0f};
 
   modelMatrixShip = glm::translate(modelMatrixShip, m_shipPosition);
-  modelMatrixShip = glm::scale(modelMatrixShip, glm::vec3(0.1f));
+  modelMatrixShip = glm::scale(modelMatrixShip, glm::vec3(0.05f));
 
   abcg::glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, &modelMatrixShip[0][0]);
   m_ship.render();
@@ -180,6 +200,29 @@ void OpenGLWindow::paintUI() {
       }
       ImGui::PopItemWidth();
     }
+/*
+    // Shader combo box
+    {
+      static std::size_t currentIndex{};
+
+      ImGui::PushItemWidth(120);
+      if (ImGui::BeginCombo("Shader", m_shaderNames.at(currentIndex))) {
+        for (const auto index : iter::range(m_shaderNames.size())) {
+          const bool isSelected{currentIndex == index};
+          if (ImGui::Selectable(m_shaderNames.at(index), isSelected))
+            currentIndex = index;
+          if (isSelected) ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+      }
+      ImGui::PopItemWidth();
+
+      // Set up VAO if shader program has changed
+      if (static_cast<int>(currentIndex) != m_currentProgramIndex) {
+        m_currentProgramIndex = currentIndex;
+        m_model.setupVAO(m_programs.at(m_currentProgramIndex));
+      }
+    }*/
 
     ImGui::End();
   }
@@ -214,5 +257,14 @@ void OpenGLWindow::update() {
       randomizeStar(position, rotation);
       position.z = -100.0f;  // Back to -100
     }
+    // Check Colisions
+    if (m_shipPosition.x == m_starPositions.at(index).x && m_shipPosition.y == m_starPositions.at(index).y) {
+        restart();
+    }
+    
   }
+}
+
+void OpenGLWindow::restart() {
+    initializeGL();
 }
